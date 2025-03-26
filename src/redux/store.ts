@@ -1,5 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './features/auth/authSlice';
+import teamReducer from './features/teams/teamSlice';
+import challengeReducer from './features/challenge/challengeSlice';
+
 import {
   persistStore,
   persistReducer,
@@ -18,10 +21,14 @@ const persistConfig = {
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
+const persistedTeamReducer = persistReducer(persistConfig, teamReducer);
+const persistedChallengeReducer = persistReducer(persistConfig, challengeReducer);
 
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
+    teams:persistedTeamReducer,
+    challenges:persistedChallengeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
