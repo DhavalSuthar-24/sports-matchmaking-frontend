@@ -30,7 +30,7 @@ const Login: React.FC = () => {
 
     try {
       await dispatch(loginUser(emailFormData));
-      navigate('/settings');
+      navigate('/teams');
     } catch (error) {
       setError('Login failed. Please check your credentials.');
     } finally {

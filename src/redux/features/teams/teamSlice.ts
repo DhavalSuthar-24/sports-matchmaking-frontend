@@ -7,6 +7,8 @@ import {
   deleteTeam,
   fetchTeamMembers,
   sendTeamInvitation,
+  getJoinRequests,
+  getTeamInvitations
 } from "./teamThunks"
 import type { Team, TeamMember } from "./teamTypes"
 
@@ -17,6 +19,11 @@ interface TeamState {
   status: "idle" | "loading" | "succeeded" | "failed"
   membersStatus: "idle" | "loading" | "succeeded" | "failed"
   error: string | null
+  invitations: any[]
+  joinRequests: any[]
+  loading:boolean
+
+  
 }
 
 const initialState: TeamState = {
@@ -26,6 +33,10 @@ const initialState: TeamState = {
   status: "idle",
   membersStatus: "idle",
   error: null,
+  invitations: [],
+  joinRequests: [],
+  loading: false,
+ 
 }
 
 const teamSlice = createSlice({
@@ -78,21 +89,30 @@ const teamSlice = createSlice({
 
     // Update Team
     builder
-      .addCase(updateTeam.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(updateTeam.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        const index = state.teams.findIndex((team) => team.id === action.payload.id)
+    .addCase(updateTeam.pending, (state) => {
+      state.status = "loading";
+    })
+    .addCase(updateTeam.fulfilled, (state, action) => {
+      state.status = "succeeded";
+      const updatedTeam = action.payload;
+      
+      // Update teams array if needed
+      if (state.teams) {
+        const index = state.teams.findIndex((team) => team.id === updatedTeam.id);
         if (index !== -1) {
-          state.teams[index] = action.payload
+          state.teams[index] = updatedTeam;
         }
-        state.selectedTeam = action.payload
-      })
-      .addCase(updateTeam.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
+      }
+      
+      // Update selectedTeam
+      state.selectedTeam = updatedTeam;
+    })
+    .addCase(updateTeam.rejected, (state, action) => {
+      state.status = "failed";
+      state.error = typeof action.payload === 'string' 
+        ? action.payload 
+        : 'Failed to update team';
+    });
 
     // Delete Team
     builder
@@ -136,6 +156,32 @@ const teamSlice = createSlice({
         state.status = "failed"
         state.error = action.payload as string
       })
+
+      // get invitations 
+      builder
+      .addCase(getTeamInvitations.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getTeamInvitations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.invitations = action.payload;
+      })
+      .addCase(getTeamInvitations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(getJoinRequests.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getJoinRequests.fulfilled, (state, action) => {
+        state.loading = false;
+        state.joinRequests = action.payload;
+      })
+      .addCase(getJoinRequests.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
   },
 })
 

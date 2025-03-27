@@ -66,7 +66,7 @@ export default function Notifications() {
               <Card key={notification.id} className={notification.isRead ? "bg-card" : "bg-accent"}>
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-base">{notification.entityType}</CardTitle>
+                    {/* <CardTitle className="text-base">{notification.title}</CardTitle> */}
                     <CardDescription className="text-xs">
                       {new Date(notification.createdAt).toLocaleString()}
                     </CardDescription>
@@ -74,7 +74,7 @@ export default function Notifications() {
                   {!notification.isRead && <Badge variant="secondary">New</Badge>}
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">{notification.content}</p>
+                  {/* <p className="text-sm">{notification.message}</p> */}
                   {!notification.isRead && (
                     <Button
                       variant="ghost"

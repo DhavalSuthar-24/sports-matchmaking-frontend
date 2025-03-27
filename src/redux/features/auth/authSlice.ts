@@ -74,8 +74,8 @@ export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await authApi.logout();
-      return response.data;
+      // const response = await authApi.logout();
+      return null; 
     } catch (error: any) {
       return rejectWithValue(error.response.data.message || "Logout failed");
     }
@@ -286,6 +286,7 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    resetAuthState: () => initialState,
     // Optional: add synchronous actions (e.g., logout locally)
     clearError(state) {
       state.error = null;
@@ -362,7 +363,9 @@ const authSlice = createSlice({
     builder.addCase(logoutUser.fulfilled, (state) => {
       state.token = null;
       state.user = null;
+      // Optionally, clear other auth properties if needed
     });
+    
 
     // Refresh Token
     builder.addCase(refreshUserToken.fulfilled, (state, action) => {

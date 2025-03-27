@@ -2,6 +2,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './features/auth/authSlice';
 import teamReducer from './features/teams/teamSlice';
 import challengeReducer from './features/challenge/challengeSlice';
+import venueReducer from './features/venue/venueSlice';
+import userReducer from './features/user/userSlice';
 
 import {
   persistStore,
@@ -20,15 +22,28 @@ const persistConfig = {
   storage,
 };
 
-const persistedAuthReducer = persistReducer(persistConfig, authReducer);
+const authPersistConfig = {
+  key: 'auth',
+  storage,
+  whitelist: ['token', 'user'], // Only persist these
+};
+
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+
+
+// const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 const persistedTeamReducer = persistReducer(persistConfig, teamReducer);
 const persistedChallengeReducer = persistReducer(persistConfig, challengeReducer);
+const persistedVenueReducer = persistReducer(persistConfig, venueReducer);
+const persistedUserReducer = persistReducer(persistConfig, userReducer);
 
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     teams:persistedTeamReducer,
     challenges:persistedChallengeReducer,
+    venues:persistedVenueReducer,
+    users:persistedUserReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

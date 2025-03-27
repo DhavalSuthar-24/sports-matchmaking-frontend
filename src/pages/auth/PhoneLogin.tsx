@@ -63,7 +63,7 @@ const PhoneLogin: React.FC = () => {
       const resultAction: any = await dispatch(loginUserWithOtp({ phoneNumber, otp }));
       if (loginUserWithOtp.fulfilled.match(resultAction)) {
         toast.success('Login successful');
-        navigate('/dashboard');
+        navigate('/teams');
       } else {
         toast.error(resultAction.payload.message || 'Invalid OTP. Please try again.');
       }

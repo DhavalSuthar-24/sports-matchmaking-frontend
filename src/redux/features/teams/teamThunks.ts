@@ -53,24 +53,29 @@ export const createTeam = createAsyncThunk(
 
 export const updateTeam = createAsyncThunk(
   "teams/updateTeam",
-  async ({ teamId, teamData }: { teamId: string; teamData: Partial<CreateTeamPayload> }, { rejectWithValue ,getState}) => {
+  async ({ teamId, teamData }: { teamId: string; teamData: Partial<CreateTeamPayload> }, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState; // Correct way to use getState
-      const token = state.auth.token; 
+      const state = getState() as RootState;
+      const token = state.auth.token;
 
-      // Set up headers with Bearer token
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       };
-      const response = await axios.patch(`${BASE_URL}/${teamId}`, teamData,config)
-      return response.data.data.team
+      
+      // Make sure BASE_URL includes '/teams' if your endpoint is /api/teams/:id
+      const response = await axios.patch(`${BASE_URL}/${teamId}`, teamData, config);
+      
+      // Return the team data directly if it's in response.data
+      // OR return response.data.data if your API wraps it
+      return response.data.data?.team || response.data; // Choose one based on your API
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update team")
+      // Return a consistent error format
+      return rejectWithValue(error.response?.data?.message || "Failed to update team");
     }
   },
-)
+);
 
 export const deleteTeam = createAsyncThunk("teams/deleteTeam", async (teamId: string, { rejectWithValue ,getState}) => {
   try {
@@ -174,3 +179,43 @@ export const requestToJoinTeam = createAsyncThunk(
 )
 
 
+export const getTeamInvitations = createAsyncThunk(
+  "teams/getTeamInvitations",
+  async (teamId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.get(`${BASE_URL}/${teamId}/invitations`, config);
+      return response.data.data.invitations;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "Failed to fetch team invitations");
+    }
+  }
+);
+export const getJoinRequests = createAsyncThunk(
+  "teams/getJoinRequests",
+  async (teamId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.get(`${BASE_URL}/${teamId}/join-requests`, config);
+      return response.data.data.joinRequests;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "Failed to fetch join requests");
+    }
+  }
+);
