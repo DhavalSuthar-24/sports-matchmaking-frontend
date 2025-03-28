@@ -14,8 +14,8 @@ import {
   X, 
 
   Zap,
-
-  LogOut
+LayoutDashboard,
+  LogOut,
 } from 'lucide-react';
 import { RootState } from '@/redux/store';
 
@@ -34,7 +34,8 @@ export const Header: React.FC = () => {
     { icon: <Users size={18} />, label: 'Teams', path: '/teams' },
     { icon: <Trophy size={18} />, label: 'Tournaments', path: '/tournaments' },
     { icon: <Shield size={18} />, label: 'Challenges', path: '/challenges' },
-    { icon: <Target size={18} />, label: 'Sports', path: '/sports' }
+    { icon: <Target size={18} />, label: 'Sports', path: '/sports' },
+    { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/dashboard' }
   ];
 
   return (

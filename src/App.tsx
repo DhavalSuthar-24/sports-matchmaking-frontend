@@ -113,7 +113,7 @@ function App() {
             {/* Venue Routes */}
             <Route path="/venues" element={<Venues />} />
             <Route path="/venues/create" element={<CreateVenue />} />
-            <Route path="/venues/:id" element={<VenueDetails />} />
+            <Route path="/venues/:venueId" element={<VenueDetails />} />
             <Route path="/venues/:venueId/edit" element={<EditVenue />} />
             <Route
               path="/venues/:venueId/time-slots"

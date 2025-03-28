@@ -40,6 +40,7 @@ import ScheduleList from "./schedule-list"
 
 export default function VenueDetail() {
   const { venueId } = useParams<{ venueId: string }>()
+
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { selectedVenue, timeSlots, schedules, status, error } = useSelector((state: RootState) => state.venues)

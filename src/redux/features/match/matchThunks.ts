@@ -1,6 +1,7 @@
-import axios from "axios"
+
 import { createAsyncThunk } from "@reduxjs/toolkit"
 import type { RootState } from "@/redux/store"
+import api from "@/redux/api"
 import type { 
   CreateMatchPayload, 
   UpdateMatchPayload, 
@@ -20,7 +21,7 @@ export const fetchMatches = createAsyncThunk(
     matchType?: string 
   } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get(BASE_URL, { params })
+      const response = await api.get("/matches", { params })
       return response.data.data.matches
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch matches")
@@ -33,7 +34,7 @@ export const fetchMatchById = createAsyncThunk(
   "matches/fetchMatchById",
   async (matchId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/${matchId}`)
+      const response = await api.get(`/matches/${matchId}`)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch match details")
@@ -55,7 +56,7 @@ export const createMatch = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(BASE_URL, matchData, config)
+      const response = await api.post("/matches", matchData, config)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to create match")
@@ -83,7 +84,7 @@ export const createMatchFromChallenge = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(`${BASE_URL}/from-challenge/${challengeId}`, matchData, config)
+      const response = await api.post(`/matches/from-challenge/${challengeId}`, matchData, config)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to create match from challenge")
@@ -108,7 +109,7 @@ export const updateMatch = createAsyncThunk(
         },
       }
 
-      const response = await axios.patch(`${BASE_URL}/${matchId}`, matchData, config)
+      const response = await api.patch(`/matches/${matchId}`, matchData, config)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to update match")
@@ -130,7 +131,7 @@ export const deleteMatch = createAsyncThunk(
         },
       }
 
-      await axios.delete(`${BASE_URL}/${matchId}`, config)
+      await api.delete(`/matches/${matchId}`, config)
       return matchId
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to delete match")
@@ -155,7 +156,7 @@ export const updateMatchStatus = createAsyncThunk(
         },
       }
 
-      const response = await axios.patch(`${BASE_URL}/${matchId}/status`, { status }, config)
+      const response = await api.patch(`/matches/${matchId}/status`, { status }, config)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to update match status")
@@ -180,7 +181,7 @@ export const updateMatchScore = createAsyncThunk(
         },
       }
 
-      await axios.patch(`${BASE_URL}/${matchId}/score`, { teamId, score }, config)
+      await api.patch(`/matches/${matchId}/score`, { teamId, score }, config)
       return { matchId, teamId, score }
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to update match score")
@@ -205,7 +206,7 @@ export const updateMatchScoreboard = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(`${BASE_URL}/${matchId}/scoreboard`, { scoreboard }, config)
+      const response = await api.post(`/matches/${matchId}/scoreboard`, { scoreboard }, config)
       return response.data.data.match
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to update match scoreboard")
@@ -218,7 +219,7 @@ export const fetchMatchesByTeam = createAsyncThunk(
   "matches/fetchMatchesByTeam",
   async (teamId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/by-team/${teamId}`)
+      const response = await api.get(`/matches/by-team/${teamId}`)
       return response.data.data.matches
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch matches by team")
@@ -231,7 +232,7 @@ export const fetchMatchesByVenue = createAsyncThunk(
   "matches/fetchMatchesByVenue",
   async (venueId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/by-venue/${venueId}`)
+      const response = await api.get(`/matches/by-venue/${venueId}`)
       return response.data.data.matches
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch matches by venue")
@@ -244,7 +245,7 @@ export const fetchMatchesByGame = createAsyncThunk(
   "matches/fetchMatchesByGame",
   async (gameId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/by-game/${gameId}`)
+      const response = await api.get(`/matches/by-game/${gameId}`)
       return response.data.matches
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch matches by game")

@@ -1,6 +1,10 @@
 // features/auth/authSlice.ts
+import Cookies from 'js-cookie';
+import api from '@/redux/api'; // You can use js-cookie library for easier cookie management
+
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import * as authApi from "./authApi";
+import { RootState } from '@/redux/store';
 
 // Define a type for our state
 interface AuthState {
@@ -72,9 +76,20 @@ export const loginUserWithOtp = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   "auth/logout",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue,getState }) => {
     try {
-      // const response = await authApi.logout();
+         const state = getState() as RootState; // Correct way to use getState
+            const token = state.auth.token; 
+      
+            // Set up headers with Bearer token
+            const config = {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            };
+      await api.post('/auth/logout',config);
+
+      Cookies.remove('refreshToken', { path: '/' });
       return null; 
     } catch (error: any) {
       return rejectWithValue(error.response.data.message || "Logout failed");
@@ -84,18 +99,25 @@ export const logoutUser = createAsyncThunk(
 
 export const refreshUserToken = createAsyncThunk(
   "auth/refreshToken",
-  async (refreshToken: string | undefined = undefined, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await authApi.refreshToken(refreshToken);
+      // Retrieve the refresh token from cookies
+      const refreshToken = Cookies.get('refreshToken');
+
+      if (!refreshToken) {
+        return rejectWithValue('Refresh token not found');
+      }
+
+      // Send the refresh token to the backend
+      const response = await api.post('/auth/refresh-token', { refreshToken });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response.data.message || "Refresh token failed"
+        error.response?.data?.message || "Refresh token failed"
       );
     }
   }
 );
-
 export const forgotUserPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (data: authApi.ForgotPasswordData, { rejectWithValue }) => {

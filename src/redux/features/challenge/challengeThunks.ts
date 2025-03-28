@@ -1,17 +1,16 @@
-import axios from "axios"
+
 import { createAsyncThunk } from "@reduxjs/toolkit"
 import type { CreateChallengePayload, UpdateChallengePayload } from "./challengeTypes"
 import type { RootState } from "@/redux/store"
+import api from "@/redux/api"
 
-// Base URL for API calls
-const BASE_URL = "http://localhost:3000/api/challenges"
 
 // Async Thunks for Challenge Operations
 export const fetchChallenges = createAsyncThunk(
   "challenges/fetchChallenges",
   async (params: { sport?: string; status?: string; teamId?: string } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get(BASE_URL, { params })
+      const response = await api.get("/challenges", { params })
       return response.data.data.challenges
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch challenges")
@@ -23,7 +22,7 @@ export const fetchChallengeById = createAsyncThunk(
   "challenges/fetchChallengeById",
   async (challengeId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/${challengeId}`)
+      const response = await api.get(`/challenges/${challengeId}`)
       return response.data.data.challenge
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch challenge details")
@@ -44,7 +43,7 @@ export const createChallenge = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(`${BASE_URL}/team`, challengeData, config)
+      const response = await api.post(`/challenges/team`, challengeData, config)
       return response.data.data.challenge
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to create challenge")
@@ -68,7 +67,7 @@ export const updateChallenge = createAsyncThunk(
         },
       }
 
-      const response = await axios.patch(`${BASE_URL}/${challengeId}`, challengeData, config)
+      const response = await api.patch(`/challenges/${challengeId}`, challengeData, config)
       return response.data.data.challenge
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to update challenge")
@@ -89,7 +88,7 @@ export const deleteChallenge = createAsyncThunk(
         },
       }
 
-      await axios.delete(`${BASE_URL}/${challengeId}`, config)
+      await api.delete(`/challenges/${challengeId}`, config)
       return challengeId
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to delete challenge")
@@ -110,7 +109,7 @@ export const acceptChallenge = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(`${BASE_URL}/${challengeId}/accept`, { teamId }, config)
+      const response = await api.post(`/challenges/${challengeId}/accept`, { teamId }, config)
       return response.data.data.challenge
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to accept challenge")
@@ -131,7 +130,7 @@ export const declineChallenge = createAsyncThunk(
         },
       }
 
-      const response = await axios.post(`${BASE_URL}/${challengeId}/decline`, { teamId }, config)
+      const response = await api.post(`/challenges/${challengeId}/decline`, { teamId }, config)
       return response.data.data.challenge
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to decline challenge")

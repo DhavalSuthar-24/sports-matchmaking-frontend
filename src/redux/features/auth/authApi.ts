@@ -1,15 +1,13 @@
 // features//auth//authApi.ts
-import axios from 'axios';
 
-// Set your API base URL
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true, 
-  headers: {
-    'Content-Type': 'application/json',
 
-  },
-});
+
+
+import api from '@/redux/api';
+
+
+
+
 
 // Define interfaces for request payloads (expand these as needed)
 export interface RegisterData {
@@ -73,6 +71,8 @@ export interface sendOtp {
 }
 
 // API call functions
+export const refresh = (data: string) =>
+  api.post('/auth/refresh', data);
 
 export const register = (data: RegisterData) =>
   api.post('/auth/register', data);
@@ -86,8 +86,8 @@ export const loginWithOtp = (data: LoginOtpData) =>
 export const sendOtp = (data: sendOtp) =>
     api.post('/auth/send-otp', data);
 
-export const logout = () =>
-  api.post('/auth/logout');
+
+
 
 export const refreshToken = (refreshToken?: string) =>
   api.post('/auth/refresh-token', { refreshToken });
