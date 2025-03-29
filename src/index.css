@@ -36,6 +36,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Header-specific colors */
+  --header-bg: oklch(1 0 0);
+  --header-text: oklch(0.145 0 0);
+  --header-primary: oklch(0.234 0.179 0.08); /* yellow-500 equivalent */
+  --header-primary-dark: oklch(0.202 0.138 0.04); /* yellow-600 equivalent */
+  --header-border: oklch(0.922 0 0);
 }
 
 .dark {
@@ -70,6 +77,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Dark mode header colors */
+  --header-bg: oklch(0.145 0 0);
+  --header-text: oklch(0.985 0 0);
+  --header-primary: oklch(0.234 0.179 0.08 / 0.9);
+  --header-primary-dark: oklch(0.202 0.138 0.04 / 0.9);
+  --header-border: oklch(1 0 0 / 10%);
 }
 
 @theme inline {
@@ -108,13 +122,50 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Header-specific theme variables */
+  --color-header-bg: var(--header-bg);
+  --color-header-text: var(--header-text);
+  --color-header-primary: var(--header-primary);
+  --color-header-primary-dark: var(--header-primary-dark);
+  --color-header-border: var(--header-border);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border border-[var(--border)] outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+
+  /* Header-specific styles */
+  .header {
+    @apply bg-header-bg text-header-text shadow-md sticky top-0 z-50 transition-colors duration-300;
+    border-bottom: 1px solid var(--color-header-border);
+  }
+
+  .header-logo {
+    @apply text-header-primary dark:text-header-primary-dark;
+  }
+
+  .header-nav-link {
+    @apply text-header-text hover:text-header-primary dark:hover:text-header-primary-dark;
+  }
+
+  .header-button-primary {
+    @apply bg-header-primary dark:bg-header-primary-dark text-white hover:bg-header-primary-dark dark:hover:bg-header-primary;
+  }
+
+  .header-button-secondary {
+    @apply border border-header-primary dark:border-header-primary-dark text-header-primary dark:text-header-primary-dark hover:bg-opacity-10 dark:hover:bg-opacity-10;
+  }
+
+  .header-mobile-menu {
+    @apply bg-header-bg dark:bg-gray-800 shadow-lg;
+  }
+
+  .dark-mode-toggle {
+    @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-header-primary-dark;
   }
 }

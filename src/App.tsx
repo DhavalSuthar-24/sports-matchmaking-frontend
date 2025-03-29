@@ -60,6 +60,9 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import Invitations from "./pages/dashboard/invitations";
 import Profile from "./pages/dashboard/profile";
 import EditTeam from "./pages/team/EditTeam";
+import GameDetailsPage from "./pages/game/game-details";
+import CreateGamePage from "./pages/game/create-game";
+import EditGamePage from "./pages/game/edit-game";
 
 function App() {
   return (
@@ -126,6 +129,9 @@ function App() {
 
             {/* Game Routes */}
             <Route path="/games" element={<Games />} />
+            <Route path="/games/:id" element={<GameDetailsPage />} />
+          <Route path="/games/create" element={<CreateGamePage />} />
+          <Route path="/games/:id/edit" element={<EditGamePage />} />
 
             {/* Player Profile Routes */}
             <Route path="/player-profiles" element={<PlayerProfiles />} />

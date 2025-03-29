@@ -4,6 +4,7 @@ import teamReducer from './features/teams/teamSlice';
 import challengeReducer from './features/challenge/challengeSlice';
 import venueReducer from './features/venue/venueSlice';
 import userReducer from './features/user/userSlice';
+import gameReducer from './features/game/gameSlice';
 
 import {
   persistStore,
@@ -36,6 +37,7 @@ const persistedTeamReducer = persistReducer(persistConfig, teamReducer);
 const persistedChallengeReducer = persistReducer(persistConfig, challengeReducer);
 const persistedVenueReducer = persistReducer(persistConfig, venueReducer);
 const persistedUserReducer = persistReducer(persistConfig, userReducer);
+const persistedGameReducer = persistReducer(persistConfig, gameReducer);
 
 export const store = configureStore({
   reducer: {
@@ -43,7 +45,8 @@ export const store = configureStore({
     teams:persistedTeamReducer,
     challenges:persistedChallengeReducer,
     venues:persistedVenueReducer,
-    users:persistedUserReducer
+    users:persistedUserReducer,
+    games:persistedGameReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
