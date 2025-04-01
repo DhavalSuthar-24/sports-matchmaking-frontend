@@ -9,7 +9,7 @@ import {
   markNotificationAsRead,
   fetchTeamInvitations,
   acceptTeamInvitation,
-  declineTeamInvitation,fetchAllUsers
+  declineTeamInvitation,fetchAllUsers,fetchUserTeams
 } from './userThunks';
 import { UserState } from './userTypes';
 
@@ -19,7 +19,8 @@ const initialState: UserState = {
     notifications: [],
     teamInvitations: [],
     status: 'idle',
-    error: null
+    error: null,
+    teams:[]
   };
   
 const userSlice = createSlice({
@@ -163,6 +164,20 @@ const userSlice = createSlice({
         state.teamInvitations = state.teamInvitations.filter(
           invitation => invitation.id !== action.payload
         );
+      });
+
+
+      builder
+      .addCase(fetchUserTeams.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchUserTeams.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.teams = action.payload;
+      })
+      .addCase(fetchUserTeams.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload as string;
       });
   }
 });

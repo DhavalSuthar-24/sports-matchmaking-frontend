@@ -59,6 +59,7 @@ export interface UserState {
   teamInvitations: TeamInvitation[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  teams:[]
 }
 
 export interface ProfileImagePayload {

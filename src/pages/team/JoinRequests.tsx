@@ -64,6 +64,7 @@ const JoinRequests = ({ teamId, isCaptain }: JoinRequestsProps) => {
         requestId,
         response: response === 'accept' ? 'APPROVE' : 'REJECT'
       })).unwrap();
+ 
       
       toast.success(`The join request has been ${response === 'accept' ? 'approved' : 'declined'}`);
       

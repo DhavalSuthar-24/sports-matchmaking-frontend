@@ -19,6 +19,7 @@ import TeamMemberInviteDialog from "./team-member-invite-dialog";
 import TeamInvitations from "./TeamInvitations";
 import JoinRequests from "./JoinRequests";
 import TeamMembersTab from "./TeamMembers";
+import toast from "react-hot-toast";
 
 const TeamDetailSkeleton = () => (
   <div className="space-y-6">
@@ -129,13 +130,14 @@ interface TeamInfoCardProps {
 }
 
 const TeamInfoCard = React.memo(({ team, members }: TeamInfoCardProps) => {
+  console.log()
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector((state: RootState) => state.auth.user.id);
   const [position, setPosition] = useState("");
   const [message, setMessage] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+console.log(members,"members")
   const isMember = useMemo(() => {
     return members.some(member => member.userId === userId);
   }, [members, userId]);
@@ -147,16 +149,24 @@ const TeamInfoCard = React.memo(({ team, members }: TeamInfoCardProps) => {
     
     setIsLoading(true);
     try {
-      await dispatch(requestToJoinTeam({
+ await dispatch(requestToJoinTeam({
         teamId: team.id,
         sport: team.sport,
         position,
         message
       })).unwrap();
+toast.success("Request sended succesfully")
+      
       
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Failed to send join request:", error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else if (typeof error === "object" && error !== null && "message" in error) {
+      toast.error((error as { message: string }).message);
+    } else {
+      toast.error("Failed to send join request. Please try again.");
+    }
     } finally {
       setIsLoading(false);
     }
@@ -293,14 +303,14 @@ export default function TeamDetail() {
     selectedTeam, 
     status, 
     error,
-    membersStatus,
-    teamMembers
+    membersStatus
   } = useSelector((state: RootState) => state.teams);
+  console.log(selectedTeam,"selected")
 
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Fetch team data when teamId changes
+
   useEffect(() => {
     if (!teamId) return;
 
@@ -357,7 +367,7 @@ export default function TeamDetail() {
       isCaptain={isCaptain}
       setIsInviteDialogOpen={setIsInviteDialogOpen}
     />
-  ), [teamMembers, membersStatus, teamId, isCaptain]);
+  ), [selectedTeam, membersStatus, teamId, isCaptain]);
 
   const renderInvitationsTab = useMemo(() => (
     <TeamInvitations
@@ -388,7 +398,7 @@ export default function TeamDetail() {
         onDelete={handleDeleteTeam}
       />
 
-      <TeamInfoCard team={selectedTeam.team} members={teamMembers} />
+      <TeamInfoCard team={selectedTeam.team} members={selectedTeam.members} />
 
       <Tabs defaultValue="members">
         <TabsList>

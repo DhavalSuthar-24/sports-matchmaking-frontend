@@ -63,6 +63,7 @@ import EditTeam from "./pages/team/EditTeam";
 import GameDetailsPage from "./pages/game/game-details";
 import CreateGamePage from "./pages/game/create-game";
 import EditGamePage from "./pages/game/edit-game";
+import ChallengeDetail from "./pages/challenge/challengeDetails";
 
 function App() {
   return (
@@ -111,6 +112,7 @@ function App() {
 
             {/* Challenge Routes */}
             <Route path="/challenges" element={<Challenges />} />
+            <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
             <Route path="/challenges/create" element={<CreateChallenge />} />
 
             {/* Venue Routes */}
@@ -130,8 +132,8 @@ function App() {
             {/* Game Routes */}
             <Route path="/games" element={<Games />} />
             <Route path="/games/:id" element={<GameDetailsPage />} />
-          <Route path="/games/create" element={<CreateGamePage />} />
-          <Route path="/games/:id/edit" element={<EditGamePage />} />
+            <Route path="/games/create" element={<CreateGamePage />} />
+            <Route path="/games/:id/edit" element={<EditGamePage />} />
 
             {/* Player Profile Routes */}
             <Route path="/player-profiles" element={<PlayerProfiles />} />

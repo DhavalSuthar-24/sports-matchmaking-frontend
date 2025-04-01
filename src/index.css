@@ -132,9 +132,7 @@
 }
 
 @layer base {
-  * {
-    @apply border border-[var(--border)] outline-ring/50;
-  }
+
   body {
     @apply bg-background text-foreground transition-colors duration-300;
   }
@@ -158,7 +156,7 @@
   }
 
   .header-button-secondary {
-    @apply border border-header-primary dark:border-header-primary-dark text-header-primary dark:text-header-primary-dark hover:bg-opacity-10 dark:hover:bg-opacity-10;
+    @apply border border-header-primary dark:border-header-primary-dark text-header-primary dark:text-header-primary-dark hover:opacity-10 dark:hover:opacity-10;
   }
 
   .header-mobile-menu {

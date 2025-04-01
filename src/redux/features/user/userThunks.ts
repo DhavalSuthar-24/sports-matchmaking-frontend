@@ -14,6 +14,27 @@ import {
 const BASE_URL = 'http://localhost:3000/api/users';
 
 // Fetch User Profile
+
+export const fetchUserTeams = createAsyncThunk(
+  'users/fetchUserTeams',
+  async (userId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.get(`${BASE_URL}/team/${userId}`, config);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch user teams');
+    }
+  }
+);
 export const fetchAllUsers = createAsyncThunk(
     'users/fetchAll',
     async (_, { rejectWithValue, getState }) => {
