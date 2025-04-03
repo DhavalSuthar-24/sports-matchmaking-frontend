@@ -99,6 +99,7 @@ type MatchType = 'FRIENDLY' | 'COMPETITIVE' | 'PRACTICE' | 'TOURNAMENT';
 type MatchStatus = 'PENDING' | 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'POSTPONED';
 
 export interface Match {
+  game: string;
   id: string;
   createdById: string;
   gameId: string;

@@ -5,7 +5,8 @@ export enum ChallengeStatus {
   ACCEPTED = 'ACCEPTED',
   DECLINED = 'DECLINED',
   EXPIRED = 'EXPIRED',
-  OPEN = 'OPEN'
+  OPEN = 'OPEN',
+  COMPLETED = "COMPLETED"
 }
 
 export enum ChallengeAcceptanceStatus {
@@ -30,6 +31,8 @@ export enum MatchStatus {
 }
 
 export interface Challenge {
+  matchResults: any;
+  acceptedByTeamId: string | undefined;
   id: string;
   title: string;
   description?: string;
@@ -58,8 +61,16 @@ export interface CreateTeamChallengeRequest {
   receiverTeamId?: string;
   expiresAt?: string;
   description?: string;
-  matchId?: string;
+  gameId: string;
+  matchType: string;
+  venueId: string;
+  scheduledAt: string;
+  duration?: number;
+  skillLevel?: string;
+  customRules?: string;
+  location?: string;
 }
+
 
 export interface ChallengeAcceptanceRequest {
   id: string;
@@ -127,6 +138,8 @@ export interface GetChallengeResponse {
 }
 
 export interface CreateChallengeResponse {
+  challenge: any;
+  id: any;
   status: string;
   data: {
     challenge: Challenge;

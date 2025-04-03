@@ -78,7 +78,9 @@ import {
   withdrawTeamChallenge,
   declineChallenge,
   acceptTeamChallenge,
+  requestAcceptOpenChallenge,
 } from "@/redux/features/challenge/challengeThunks";
+import RequestJoinChallengeModal from "./components/RequestJoinChallengeModal";
 
 // Import challenge card component
 import ChallengeCard from "./ChallengeCard";
@@ -86,6 +88,7 @@ import ChallengeCard from "./ChallengeCard";
 export default function ChallengesList() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const userTeams = useSelector((state: RootState) => state.users.teams);
 
   // Select state from Redux store with properly typed state
   const {
@@ -95,7 +98,9 @@ export default function ChallengesList() {
     currentPage = 1,
     totalPages = 1,
     totalCount = 0,
-  } = useSelector((state: RootState) => state.challenges as unknown as ExtendedChallengeState);
+  } = useSelector(
+    (state: RootState) => state.challenges as unknown as ExtendedChallengeState
+  );
 
   const { teams } = useSelector((state: RootState) => state.teams);
   const userId = useSelector((state: RootState) => state.auth.user?.id);
@@ -113,10 +118,108 @@ export default function ChallengesList() {
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
   const [isDeclining, setIsDeclining] = useState<string | null>(null);
 
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestChallengeId, setRequestChallengeId] = useState<string | null>(
+    null
+  );
+  const [requestChallengeTitle, setRequestChallengeTitle] = useState<
+    string | undefined
+  >(undefined);
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+
   // Map Redux loading state to component's 'status' concept
   const status = loading ? "loading" : error ? "failed" : "succeeded";
 
-  // Debounced search function with proper dependency array
+  const handleRequestJoinClick = (
+    challengeId: string,
+    challengeTitle?: string
+  ) => {
+    if (!userTeams || userTeams.length === 0) {
+      toast.error(
+        "You need to be part of a team to request joining a challenge."
+      );
+      return;
+    }
+    setRequestChallengeId(challengeId);
+    setRequestChallengeTitle(challengeTitle);
+    setIsRequestModalOpen(true);
+  };
+
+  const handleCloseRequestModal = () => {
+    setIsRequestModalOpen(false);
+    setRequestChallengeId(null);
+    setRequestChallengeTitle(undefined);
+  };
+
+  const handleRequestSubmit = async (data: {
+    teamId: string;
+    message?: string;
+  }) => {
+    if (!requestChallengeId) return;
+
+    setIsSubmittingRequest(true); // Start loading
+    try {
+      const resultAction = await dispatch(
+        requestAcceptOpenChallenge({
+          challengeId: requestChallengeId,data:{
+            teamId: data.teamId,
+            message: data.message,
+          }
+      // Pass optional message
+        })
+      );
+
+      if (requestAcceptOpenChallenge.fulfilled.match(resultAction)) {
+        toast.success("Request sent successfully!");
+        handleCloseRequestModal(); // Close modal on success
+        // Optionally refresh the list immediately or rely on websockets/polling
+        dispatch(getAllChallenges(filters));
+      } else {
+        const errorMessage =
+          (resultAction.payload as any)?.message || "Failed to send request";
+        toast.error(errorMessage);
+        console.error("Request failed:", resultAction.payload);
+        // Keep modal open on failure for correction? Or close? User choice.
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred while sending the request.");
+      console.error("Request unexpected error:", err);
+      // Keep modal open on unexpected error
+    } finally {
+      setIsSubmittingRequest(false); // Stop loading
+    }
+  };
+
+  const handleAcceptChallenge = async (
+    challengeId: string /*, requiresSelection: boolean */
+  ) => {
+    // TODO: Implement logic check if modal is needed
+    // if (requiresSelection || (userTeams && userTeams.length > 1)) {
+    //   // Open Accept Modal
+    // } else {
+    // Original logic (accepts with first team)
+    const userTeam = userTeams && userTeams.length > 0 ? userTeams[0] : null;
+
+    if (!userTeam) {
+      toast.error("You must be part of a team to accept a challenge.");
+      return;
+    }
+
+    setIsAccepting(challengeId);
+    try {
+      const acceptData: AcceptTeamChallengeRequest = { teamId: userTeam.id };
+      const resultAction = await dispatch(
+        acceptTeamChallenge({ challengeId, data: acceptData })
+      );
+      // ... rest of existing try block
+    } catch (err: any) {
+      // ... existing catch block
+    } finally {
+      setIsAccepting(null);
+    }
+    // }
+  };
+
   const debouncedSearch = useCallback(
     debounce((term: string) => {
       setFilters((prev) => ({
@@ -136,7 +239,7 @@ export default function ChallengesList() {
 
   // Handle filter changes
   const handleFilterChange = (
-    key: keyof Omit<FetchChallengesParams, 'search' | 'page'>,
+    key: keyof Omit<FetchChallengesParams, "search" | "page">,
     value: string
   ) => {
     const processedValue = value === "all" ? "" : value;
@@ -169,42 +272,6 @@ export default function ChallengesList() {
     }
   };
 
-  // Handle accepting a challenge
-  const handleAcceptChallenge = async (challengeId: string) => {
-    const userTeam = teams && teams.length > 0 ? teams[0] : null;
-
-    if (!userTeam) {
-      toast.error("You must be part of a team to accept a challenge.");
-      console.error("Accept challenge failed: User has no teams associated.");
-      return;
-    }
-
-    setIsAccepting(challengeId);
-    try {
-      const acceptData: AcceptTeamChallengeRequest = { teamId: userTeam.id };
-      const resultAction = await dispatch(
-        acceptTeamChallenge({
-          challengeId,
-          data: acceptData,
-        })
-      );
-
-      if (acceptTeamChallenge.fulfilled.match(resultAction)) {
-        toast.success("Challenge accepted successfully!");
-        dispatch(getAllChallenges(filters));
-      } else {
-        const errorMessage = (resultAction.payload as any)?.message || "Failed to accept challenge";
-        toast.error(errorMessage);
-        console.error("Accept challenge failed:", resultAction.payload);
-      }
-    } catch (err: any) {
-      toast.error("An unexpected error occurred while accepting.");
-      console.error("Accept challenge unexpected error:", err);
-    } finally {
-      setIsAccepting(null);
-    }
-  };
-
   // Handle declining a challenge
   const handleDeclineChallenge = async (challengeId: string) => {
     setIsDeclining(challengeId);
@@ -215,7 +282,9 @@ export default function ChallengesList() {
         toast.success("Challenge declined");
         dispatch(getAllChallenges(filters));
       } else {
-        const errorMessage = (resultAction.payload as any)?.message || "Failed to decline challenge";
+        const errorMessage =
+          (resultAction.payload as any)?.message ||
+          "Failed to decline challenge";
         toast.error(errorMessage);
         console.error("Decline challenge failed:", resultAction.payload);
       }
@@ -236,7 +305,9 @@ export default function ChallengesList() {
         toast.success("Challenge withdrawn");
         dispatch(getAllChallenges(filters));
       } else {
-        const errorMessage = (resultAction.payload as any)?.message || "Failed to withdraw challenge";
+        const errorMessage =
+          (resultAction.payload as any)?.message ||
+          "Failed to withdraw challenge";
         toast.error(errorMessage);
         console.error("Withdraw challenge failed:", resultAction.payload);
       }
@@ -255,7 +326,9 @@ export default function ChallengesList() {
         toast.success("Challenge expired");
         dispatch(getAllChallenges(filters));
       } else {
-        const errorMessage = (resultAction.payload as any)?.message || "Failed to expire challenge";
+        const errorMessage =
+          (resultAction.payload as any)?.message ||
+          "Failed to expire challenge";
         toast.error(errorMessage);
         console.error("Expire challenge failed:", resultAction.payload);
       }
@@ -268,20 +341,31 @@ export default function ChallengesList() {
   // Filter challenges based on the active tab - fix the comparison issue
   const filteredChallenges = challenges.filter((challenge: Challenge) => {
     if (activeTab === "all") return true;
-    if (activeTab === "open") return challenge.status === "OPEN" as ChallengeStatus;
-    if (activeTab === "accepted") return challenge.status === "ACCEPTED" as ChallengeStatus;
-    if (activeTab === "completed") return challenge.status === "COMPLETED" as ChallengeStatus;
+    if (activeTab === "open")
+      return challenge.status === ("OPEN" as ChallengeStatus);
+    if (activeTab === "accepted")
+      return challenge.status === ("ACCEPTED" as ChallengeStatus);
+    if (activeTab === "completed")
+      return challenge.status === ("COMPLETED" as ChallengeStatus);
     return true;
   });
 
   const getEmptyStateMessage = () => {
     const filtersActive = filters.search || filters.sport || filters.status;
 
-    if (status !== 'loading' && filtersActive && filteredChallenges.length === 0) {
+    if (
+      status !== "loading" &&
+      filtersActive &&
+      filteredChallenges.length === 0
+    ) {
       return "No challenges match your current filters. Try adjusting your search or filter criteria.";
     }
 
-    if (status !== 'loading' && !filtersActive && filteredChallenges.length === 0) {
+    if (
+      status !== "loading" &&
+      !filtersActive &&
+      filteredChallenges.length === 0
+    ) {
       switch (activeTab) {
         case "open":
           return "There are currently no open challenges matching your criteria.";
@@ -299,7 +383,7 @@ export default function ChallengesList() {
 
   // Display global error message if fetch failed
   useEffect(() => {
-    if (status === 'failed' && error) {
+    if (status === "failed" && error) {
       toast.error(`Error fetching challenges: ${error}`);
     }
   }, [status, error]);
@@ -343,7 +427,10 @@ export default function ChallengesList() {
               value={filters.sport || "all"}
               onValueChange={(value) => handleFilterChange("sport", value)}
             >
-              <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filter by sport">
+              <SelectTrigger
+                className="w-full sm:w-[150px]"
+                aria-label="Filter by sport"
+              >
                 <SelectValue placeholder="All Sports" />
               </SelectTrigger>
               <SelectContent>
@@ -360,7 +447,10 @@ export default function ChallengesList() {
               value={filters.status || "all"}
               onValueChange={(value) => handleFilterChange("status", value)}
             >
-              <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filter by status">
+              <SelectTrigger
+                className="w-full sm:w-[150px]"
+                aria-label="Filter by status"
+              >
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -383,7 +473,10 @@ export default function ChallengesList() {
             <TabsTrigger value="all">
               All
               {totalCount > 0 && (
-                <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs hidden sm:inline-block">
+                <Badge
+                  variant="secondary"
+                  className="ml-2 px-1.5 py-0.5 text-xs hidden sm:inline-block"
+                >
                   {totalCount}
                 </Badge>
               )}
@@ -420,11 +513,16 @@ export default function ChallengesList() {
             )}
 
             {/* Error State */}
-            {status === 'failed' && error && (
+            {status === "failed" && error && (
               <Card className="text-center border-destructive">
                 <CardHeader>
-                  <CardTitle className="text-destructive">Error Loading Challenges</CardTitle>
-                  <CardDescription>{error?.message || 'Could not fetch challenges. Please try again later.'}</CardDescription>
+                  <CardTitle className="text-destructive">
+                    Error Loading Challenges
+                  </CardTitle>
+                  <CardDescription>
+                    {error?.message ||
+                      "Could not fetch challenges. Please try again later."}
+                  </CardDescription>
                 </CardHeader>
               </Card>
             )}
@@ -447,6 +545,14 @@ export default function ChallengesList() {
                 </CardFooter>
               </Card>
             )}
+            <RequestJoinChallengeModal
+              isOpen={isRequestModalOpen}
+              onClose={handleCloseRequestModal}
+              onSubmit={handleRequestSubmit}
+              userTeams={userTeams}
+              challengeTitle={requestChallengeTitle}
+              isLoading={isSubmittingRequest}
+            />
 
             {/* Success State - Display Challenges */}
             {status !== "loading" && filteredChallenges.length > 0 && (
@@ -456,13 +562,16 @@ export default function ChallengesList() {
                     <ChallengeCard
                       key={challenge.id}
                       challenge={challenge}
-                      userId={userId}
+                      userId={userId} // Pass userId
+                      userTeams={userTeams} // Pass user's teams
                       onAccept={handleAcceptChallenge}
                       onDecline={handleDeclineChallenge}
-                      onWithdraw={handleWithdrawChallenge}
-                      onExpire={handleExpireChallenge}
+                      onWithdraw={handleWithdrawChallenge} // Keep these if needed based on sender logic within card
+                      onExpire={handleExpireChallenge} // Keep these if needed
+                      onRequestJoin={handleRequestJoinClick} // Pass the request handler
                       isAccepting={isAccepting === challenge.id}
                       isDeclining={isDeclining === challenge.id}
+                      // Add other states like isWithdrawing if those buttons move to the card
                     />
                   ))}
                 </div>
@@ -495,7 +604,9 @@ export default function ChallengesList() {
                           <PaginationNext
                             onClick={() => handlePageChange(currentPage + 1)}
                             aria-disabled={currentPage >= totalPages}
-                            tabIndex={currentPage >= totalPages ? -1 : undefined}
+                            tabIndex={
+                              currentPage >= totalPages ? -1 : undefined
+                            }
                             className={
                               currentPage >= totalPages
                                 ? "pointer-events-none opacity-50"

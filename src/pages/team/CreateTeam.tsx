@@ -10,14 +10,15 @@ import { useDispatch, useSelector } from "react-redux"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Upload } from "lucide-react"
+
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, Link as LinkIcon } from "lucide-react"
 
 import { createTeam } from "@/redux/features/teams/teamThunks"
 import type { AppDispatch, RootState } from "@/redux/store"
@@ -38,8 +39,9 @@ const formSchema = z.object({
 export default function CreateTeamForm() {
   const router = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const { status, error } = useSelector((state: RootState) => state.teams)
+  const { status } = useSelector((state: RootState) => state.teams)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoInputMethod, setLogoInputMethod] = useState<"upload" | "url">("upload")
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,15 +60,37 @@ export default function CreateTeamForm() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Here in a real app, you would upload the file to your server or a service like S3
-    // For this demo, we'll just create a temporary URL for preview
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file")
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB")
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string
       setLogoPreview(result)
-      form.setValue("logo", result) // In real app, this would be the URL returned from the upload
+      form.setValue("logo", result)
+    }
+    reader.onerror = () => {
+      toast.error("Error reading file")
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleLogoUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value
+    if (url) {
+      setLogoPreview(url)
+      form.setValue("logo", url)
+    } else {
+      setLogoPreview(null)
+      form.setValue("logo", undefined)
+    }
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -208,32 +232,96 @@ export default function CreateTeamForm() {
               </div>
 
               <FormItem>
-                <FormLabel>Team Logo</FormLabel>
-                <div className="flex items-center gap-4">
-                  {logoPreview && (
-                    <div className="relative h-16 w-16 overflow-hidden rounded-md border">
-                      <img
-                        src={logoPreview || "/placeholder.svg"}
-                        alt="Logo preview"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <label htmlFor="logo-upload" className="cursor-pointer">
-                    <div className="flex h-10 items-center rounded-md border px-4 py-2 hover:bg-muted">
-                      <Upload className="mr-2 h-4 w-4" />
-                      <span>Upload Logo</span>
-                    </div>
-                    <input
-                      id="logo-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleLogoChange}
-                    />
-                  </label>
+                <FormLabel className="font-medium">Team Logo</FormLabel>
+                
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    type="button"
+                    variant={logoInputMethod === "upload" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setLogoInputMethod("upload")}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={logoInputMethod === "url" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setLogoInputMethod("url")}
+                  >
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    URL
+                  </Button>
                 </div>
-                <FormDescription>Upload a logo for your team (optional)</FormDescription>
+
+                {logoInputMethod === "upload" ? (
+                  <div className="flex items-center gap-4">
+                    {logoPreview ? (
+                      <div className="relative h-20 w-20 rounded-md border overflow-hidden">
+                        <img
+                          src={logoPreview}
+                          alt="Team logo preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-20 w-20 rounded-md border flex items-center justify-center bg-muted/50">
+                        <span className="text-xs text-muted-foreground">No logo</span>
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor="logo-upload" className="cursor-pointer">
+                        <div className="flex h-10 items-center rounded-md border px-4 py-2 hover:bg-muted transition-colors">
+                          <Upload className="mr-2 h-4 w-4" />
+                          <span className="text-sm">Select File</span>
+                        </div>
+                        <input
+                          id="logo-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoChange}
+                        />
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        JPG, PNG up to 2MB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/logo.png"
+                      onChange={handleLogoUrlChange}
+                      className="h-10"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Paste the URL of your team logo
+                    </p>
+                    {logoPreview && (
+                      <div className="pt-2">
+                        <p className="text-xs font-medium mb-1">Logo Preview:</p>
+                        <div className="relative h-20 w-20 rounded-md border overflow-hidden">
+                          <img
+                            src={logoPreview}
+                            alt="Team logo preview from URL"
+                            className="h-full w-full object-cover"
+                            onError={() => {
+                              setLogoPreview(null)
+                              toast.error("Failed to load image from URL")
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <FormDescription className="text-xs">
+                  Recommended size: 200x200 pixels
+                </FormDescription>
               </FormItem>
             </div>
           </div>

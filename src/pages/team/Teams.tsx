@@ -1,25 +1,24 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Search, Trophy, BarChart2, Users, CalendarDays } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchTeams } from "@/redux/features/teams/teamThunks";
+import { fetchGames } from "@/redux/features/game/gameThunks";
+import type { Game } from "@/redux/features/game/gameTypes";
 import type { AppDispatch, RootState } from "@/redux/store";
 import TeamCard from "./TeamCard";
-
-const sports = [
-  "football", "basketball", "volleyball", "tennis", "cricket", 
-  "hockey", "baseball", "rugby", "badminton", "table-tennis"
-];
+import toast from "react-hot-toast";
 
 export default function TeamsList() {
   const router = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { teams, status, error } = useSelector((state: RootState) => state.teams);
+  const { teams, status: teamsStatus, error: teamsError } = useSelector((state: RootState) => state.teams);
+  const { games, status: gamesStatus } = useSelector((state: RootState) => state.games);
 
   const [filters, setFilters] = useState({
     name: "",
@@ -27,18 +26,23 @@ export default function TeamsList() {
     level: "all",
   });
 
-  // Debounce filter changes to prevent excessive API calls
   useEffect(() => {
     const timer = setTimeout(() => {
       const cleanedFilters = Object.fromEntries(
         Object.entries(filters)
-          .filter(([_, v]) => v !== "" && v !== "all")
+          .filter(([key, v]) => v !== "" && v !== "all" && key !== 'sport')
       );
       dispatch(fetchTeams(cleanedFilters));
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [dispatch, filters]);
+  }, [dispatch, filters.name, filters.level]);
+
+  useEffect(() => {
+
+      dispatch(fetchGames());
+    
+  }, []);
 
   const handleCreateTeam = useCallback(() => {
     router("/teams/create");
@@ -48,50 +52,71 @@ export default function TeamsList() {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  const availableSports = useMemo(() => {
+    if (gamesStatus !== 'succeeded' || !games) return [];
+    const sportNames = games.map((game: Game) => game.name);
+    return [...new Set(sportNames)].sort((a, b) => a.localeCompare(b));
+  }, [games, gamesStatus]);
+
   const filteredTeams = useMemo(() => {
-    if (status !== "succeeded") return [];
+    if (teamsStatus !== "succeeded") return [];
     return teams.filter(team => {
-      const nameMatch = team.name.toLowerCase().includes(filters.name.toLowerCase());
-      const sportMatch = filters.sport === "all" || team.sport === filters.sport;
+      const nameMatch = !filters.name || team.name.toLowerCase().includes(filters.name.toLowerCase());
+      const sportMatch = filters.sport === "all" || team.sport?.toLowerCase() === filters.sport.toLowerCase();
       const levelMatch = filters.level === "all" || team.level === filters.level;
       return nameMatch && sportMatch && levelMatch;
     });
-  }, [teams, status, filters]);
+  }, [teams, teamsStatus, filters.name, filters.sport, filters.level]);
+
+  const isLoading = teamsStatus === 'loading' || gamesStatus === 'loading';
 
   const renderSkeletons = useMemo(() => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i} className="overflow-hidden h-full">
-          <CardHeader className="pb-0">
-            <Skeleton className="h-6 w-32 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-20 w-full mt-4" />
-          </CardContent>
-          <CardFooter>
-            <Skeleton className="h-10 w-full" />
-          </CardFooter>
+           <CardHeader className="p-4">
+             <Skeleton className="h-6 w-3/4 mb-2" />
+             <Skeleton className="h-4 w-1/2" />
+           </CardHeader>
+           <CardContent className="p-4">
+             <Skeleton className="h-4 w-full mb-2" />
+             <Skeleton className="h-4 w-5/6" />
+           </CardContent>
+           <CardFooter className="p-4">
+             <Skeleton className="h-9 w-full" />
+           </CardFooter>
         </Card>
       ))}
     </div>
   ), []);
 
-  const renderError = useMemo(() => (
-    <Card className="bg-destructive/10 border-destructive/30">
-      <CardHeader>
-        <CardTitle>Error Loading Teams</CardTitle>
-        <CardDescription>
-          {error || "There was an error loading the teams. Please try again."}
-        </CardDescription>
-      </CardHeader>
-      <CardFooter>
-        <Button variant="outline" onClick={() => dispatch(fetchTeams({}))}>
-          Retry
-        </Button>
-      </CardFooter>
-    </Card>
-  ), [error, dispatch]);
+  const renderError = useMemo(() => {
+    const getErrorMessage = (err: any): string => {
+      if (typeof err === 'object' && err !== null && err.message) {
+        return err.message;
+      }
+      if (typeof err === 'string') {
+        return err;
+      }
+      return "An unexpected error occurred loading teams. Please try again.";
+    };
+
+    return (
+      <Card className="bg-destructive/10 border-destructive/30">
+        <CardHeader>
+          <CardTitle>Error Loading Teams</CardTitle>
+          <CardDescription>
+            {getErrorMessage(teamsError)}
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button variant="outline" onClick={() => dispatch(fetchTeams({}))}>
+            Retry Fetching Teams
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }, [teamsError, dispatch]);
 
   const renderEmpty = useMemo(() => (
     <Card className="text-center">
@@ -100,7 +125,7 @@ export default function TeamsList() {
         <CardDescription>
           {Object.values(filters).some((v) => v !== "" && v !== "all")
             ? "No teams match your current filters. Try adjusting your search criteria."
-            : "You don't have any teams yet. Create your first team to get started."}
+            : "No teams available. Create the first one!"}
         </CardDescription>
       </CardHeader>
       <CardFooter className="flex justify-center">
@@ -137,24 +162,34 @@ export default function TeamsList() {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search teams..."
+            placeholder="Search teams by name..."
             className="pl-8"
             value={filters.name}
             onChange={(e) => handleFilterChange("name", e.target.value)}
           />
         </div>
         <div className="grid grid-cols-2 sm:flex gap-2">
-          <Select value={filters.sport} onValueChange={(value) => handleFilterChange("sport", value)}>
+          <Select
+            value={filters.sport}
+            onValueChange={(value) => handleFilterChange("sport", value)}
+            disabled={gamesStatus === 'loading' && availableSports.length === 0}
+           >
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All Sports" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sports</SelectItem>
-              {sports.map((sport) => (
+              {gamesStatus === 'loading' && availableSports.length === 0 && (
+                 <SelectItem value="loading-sports" disabled>Loading sports...</SelectItem>
+              )}
+              {availableSports.map((sport) => (
                 <SelectItem key={sport} value={sport} className="capitalize">
                   {sport}
                 </SelectItem>
               ))}
+              {gamesStatus === 'succeeded' && availableSports.length === 0 && (
+                 <SelectItem value="no-sports" disabled>No sports found</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <Select value={filters.level} onValueChange={(value) => handleFilterChange("level", value)}>
@@ -172,10 +207,10 @@ export default function TeamsList() {
         </div>
       </div>
 
-      {status === "loading" && renderSkeletons}
-      {status === "failed" && renderError}
-      {status === "succeeded" && filteredTeams.length === 0 && renderEmpty}
-      {status === "succeeded" && filteredTeams.length > 0 && renderTeams}
+      {isLoading && renderSkeletons}
+      {!isLoading && teamsStatus === "failed" && renderError}
+      {!isLoading && teamsStatus === "succeeded" && filteredTeams.length === 0 && renderEmpty}
+      {!isLoading && teamsStatus === "succeeded" && filteredTeams.length > 0 && renderTeams}
     </div>
   );
 }
