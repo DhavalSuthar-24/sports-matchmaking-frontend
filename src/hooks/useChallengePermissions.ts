@@ -29,11 +29,8 @@ export function useChallengePermissions({
 
 
 
-    console.log(challenge,"Cccccccccc")
-    console.log(user,"uuuuuuuuuu")
-    console.log(userTeams,"utttttttttttt"
-    )
-    console.log(acceptanceRequests,"aaaaaaaaaaaaaaa")
+
+
     const userTeamIds = useMemo(() => {
 
         if (!user || !userTeams) return [];
@@ -53,34 +50,29 @@ export function useChallengePermissions({
         const userId = user.id;
         const userName = user.name
         const challengeStatus = challenge.status as ChallengeStatus; // Cast if necessary, or ensure Challenge type uses the enum
-        const isOpenChallenge = challengeStatus === "OPEN"; // Assuming "OPEN" is a valid string literal in ChallengeStatus
+      
 
         const isCreator = challenge.createdBy === userName || challenge.senderId === userId;
 
-        // Fix 1: Add truthiness check for optional team IDs
+     
         const isSenderMember = !!challenge.senderTeamId && userTeamIds.includes(challenge.senderTeamId);
         const isReceiverMember = !!challenge.receiverTeamId && userTeamIds.includes(challenge.receiverTeamId);
 
-        // Fix 4: Use firstAcceptorTeamId instead of acceptedByTeamId and add truthiness check
+  
         const isAcceptorMember = !!challenge.firstAcceptorTeamId && userTeamIds.includes(challenge.firstAcceptorTeamId);
 
         const userPendingRequest = acceptanceRequests?.find(req =>
-            // Fix 2: Compare with the correct enum value or string literal
             req.status === ChallengeAcceptanceStatus.PENDING_APPROVAL &&
-            // Fix 3: Use acceptingTeamId instead of requestingTeamId and add truthiness check
             !!req.acceptingTeamId && userTeamIds.includes(req.acceptingTeamId)
         );
 
-        // Use string literals for status comparison if ChallengeStatus is defined as such
-        const isPendingOrOpen = ['PENDING', 'OPEN'].includes(challengeStatus);
+        const isPendingOrOpen = ['PENDING', 'OPEN',"ACCEPTED"].includes(challengeStatus);
         console.log(isCreator,"iscreator",isSenderMember,"isSenderMember")
 
         const canModify = (isCreator || isSenderMember) && isPendingOrOpen;
         const canWithdrawChallenge = (isCreator || isSenderMember) && isPendingOrOpen;
-        // Added check for receiverTeamId existence for direct actions
         const canAcceptDirectly = !!challenge.receiverTeamId && isReceiverMember && challengeStatus === 'PENDING';
         const canDeclineDirectly = !!challenge.receiverTeamId && isReceiverMember && challengeStatus === 'PENDING';
-        // User must have teams to request acceptance
         const canRequestAccept = !isCreator && !isSenderMember && !isReceiverMember && challengeStatus === 'OPEN' && !userPendingRequest && userTeams && userTeams.length > 0;
         const canWithdrawRequest = !!userPendingRequest;
         const canManageRequests = (isCreator || isSenderMember) && challengeStatus === 'OPEN';

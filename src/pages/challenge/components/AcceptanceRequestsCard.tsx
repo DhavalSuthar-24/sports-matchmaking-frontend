@@ -26,7 +26,7 @@ const AcceptanceRequestsCard: React.FC<AcceptanceRequestsCardProps> = React.memo
     onApprove,
 }) => {
     const pendingRequests = requests?.filter(r => r.status === ChallengeAcceptanceStatus.PENDING_APPROVAL) ?? [];
-
+     console.log(pendingRequests,"reqqqqqqqq")
     return (
         <Card>
             <CardHeader>
@@ -46,10 +46,10 @@ const AcceptanceRequestsCard: React.FC<AcceptanceRequestsCardProps> = React.memo
                             {requests.map((req) => (
                                 <div key={req.id} className="flex items-center justify-between gap-3 p-3 border rounded-lg bg-background">
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <TeamAvatar team={req.requestingTeam} />
+                                        <TeamAvatar team={req?.acceptingTeam} />
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate" title={req.requestingTeam?.name || `Team ID: ${req.requestingTeamId}`}>
-                                                {req.requestingTeam?.name || <span className="italic">Unknown Team</span>}
+                                            <p className="font-medium truncate" title={req.acceptingTeam?.name || `Team ID: ${req.acceptingTeam?.id}`}>
+                                                {req.acceptingTeam?.name || <span className="italic">Unknown Team</span>}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 Requested: {isValid(new Date(req.createdAt)) ? formatDistanceToNowStrict(new Date(req.createdAt), { addSuffix: true }) : 'N/A'}
@@ -57,7 +57,7 @@ const AcceptanceRequestsCard: React.FC<AcceptanceRequestsCardProps> = React.memo
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                        {req.status === 'PENDING' && (
+                                        {req.status === 'PENDING_APPROVAL' && (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button
@@ -73,9 +73,9 @@ const AcceptanceRequestsCard: React.FC<AcceptanceRequestsCardProps> = React.memo
                                                 <TooltipContent>Approve Request</TooltipContent>
                                             </Tooltip>
                                         )}
-                                        {req.status === 'APPROVED' && <Badge variant="success" className="text-xs">Approved</Badge>}
-                                        {req.status === 'DECLINED' && <Badge variant="destructive" className="text-xs">Declined</Badge>}
-                                        {req.status === 'WITHDRAWN' && <Badge variant="outline" className="text-xs">Withdrawn</Badge>}
+                                        {req.status === ChallengeAcceptanceStatus.APPROVED && <Badge variant="default" className="text-xs">Approved</Badge>}
+                                        {req.status === ChallengeAcceptanceStatus.REJECTED && <Badge variant="destructive" className="text-xs">Declined</Badge>}
+                                        {req.status === ChallengeAcceptanceStatus.WITHDRAWN && <Badge variant="outline" className="text-xs">Withdrawn</Badge>}
                                     </div>
                                 </div>
                             ))}

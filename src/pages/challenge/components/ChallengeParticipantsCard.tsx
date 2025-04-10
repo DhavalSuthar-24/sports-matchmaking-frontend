@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
 import type { Challenge } from '@/redux/features/challenge/challengeTypes'; // Adjust path
 import type { Team } from '@/redux/features/challenge/common.types'; // Adjust path
 import type { User as AuthUser } from '@/redux/features/user/userTypes'; // Adjust path
-
+import {useNavigate} from "react-router-dom"
 
 // Define Permissions type based on the hook's return type
 type Permissions = ReturnType<typeof import('@/hooks/useChallengePermissions').useChallengePermissions>;
@@ -48,6 +49,8 @@ const ChallengeParticipantsCard: React.FC<ChallengeParticipantsCardProps> = Reac
     acceptanceRequests,
 }) => {
     const isOpen = challenge.status == "OPEN"
+
+    const navigate = useNavigate();
     return (
         <Card>
             <CardHeader>
@@ -80,7 +83,7 @@ const ChallengeParticipantsCard: React.FC<ChallengeParticipantsCardProps> = Reac
                          </div>
                     ) : ['ACCEPTED', 'COMPLETED'].includes(challenge.status) && receiverTeam ? (
                         // Case 1: Accepted/Completed - Show Receiver/Acceptor Team
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 dark:bg-muted/10 rounded-lg border dark:border-muted/30">
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 dark:bg-muted/10 rounded-lg border dark:border-muted/30" onClick={()=>navigate(`/teams/${receiverTeam.id}`)}>
                             <TeamAvatar team={receiverTeam} />
                             <div className="flex-1 min-w-0">
                                 <div className="font-medium truncate" title={receiverTeam.name}> {receiverTeam.name} </div>

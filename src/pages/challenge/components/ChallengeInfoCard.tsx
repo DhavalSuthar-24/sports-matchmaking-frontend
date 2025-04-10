@@ -18,6 +18,7 @@ const ChallengeInfoCard: React.FC<ChallengeInfoCardProps> = React.memo(({
     timeRemaining,
     expiryProgress,
 }) => {
+    console.log("first,",challenge)
     return (
         <Card>
             <CardHeader>
@@ -64,26 +65,25 @@ const ChallengeInfoCard: React.FC<ChallengeInfoCardProps> = React.memo(({
                             </span>
                         </div>
                     </div>
-                    {challenge?.match?.venue.name && (
+                    {challenge?.teamMatch?.venue.name && (
                         <div className="sm:col-span-2">
                             <h3 className="text-sm font-medium text-muted-foreground mb-1">Location</h3>
                             <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                                <span className="text-sm">{challenge.location}</span>
+                                <span className="text-sm">{challenge?.teamMatch?.venue.name}</span>
                             </div>
                         </div>
                     )}
                 </div>
-                {challenge.matchDetails && Object.keys(challenge.matchDetails).length > 0 && (
+                {challenge.teamMatch && Object.keys(challenge.teamMatch).length > 0 && (
                     <>
                         <Separator />
                         <div className="space-y-3">
                             <h3 className="text-base font-semibold">Match Details</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                                {challenge.matchDetails.gameId && <p><strong>Game:</strong> {challenge.matchDetails.gameId}</p>}
-                                {challenge.matchDetails.matchType && <p><strong>Type:</strong> {challenge.matchDetails.matchType}</p>}
-                                {challenge.matchDetails.format && <p><strong>Format:</strong> {challenge.matchDetails.format}</p>}
-                                {challenge.matchDetails.rules && <p className="sm:col-span-2"><strong>Rules:</strong> <span className="whitespace-pre-wrap">{challenge.matchDetails.rules}</span></p>}
+                                {challenge.teamMatch.gameId && <p><strong>Game:</strong> {challenge.teamMatch.gameId}</p>}
+                                {challenge.teamMatch.matchType && <p><strong>Type:</strong> {challenge.teamMatch.matchType}</p>}
+                                {challenge.teamMatch.customRules && <p className="sm:col-span-2"><strong>Rules:</strong> <span className="whitespace-pre-wrap">{challenge.teamMatch.customRules}</span></p>}
                             </div>
                         </div>
                     </>

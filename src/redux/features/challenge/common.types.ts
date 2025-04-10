@@ -106,11 +106,13 @@ export interface Match {
   matchType: MatchType;
   venueId?: string;
   scheduledAt: Date;
+  venue:Venue;
   duration?: number;
   location?: string;
   skillLevel: string;
   visibility: string;
   status: MatchStatus;
+  customRules:string
   createdAt: Date;
   updatedAt: Date;
 }

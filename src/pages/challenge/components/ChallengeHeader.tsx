@@ -25,6 +25,7 @@ const ChallengeHeader: React.FC<ChallengeHeaderProps> = React.memo(({
     onWithdraw,
     onDelete
 }) => {
+    console.log(canModify,"canModify")
     const navigate = useNavigate();
 
     return (
