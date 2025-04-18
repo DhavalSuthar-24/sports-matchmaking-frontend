@@ -53,7 +53,7 @@ export default function EditTeamPage() {
   const { id: teamId } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
   const { selectedTeam, status, error } = useSelector((state: RootState) => state.teams);
-  console.log(teamId)
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -62,8 +62,11 @@ export default function EditTeamPage() {
     maxPlayers: 0,
     logo: '',
     level: '',
+    socialLinks: null,
+    rosterRequirements: null,
     achievements: '',
-    membersToRemove: [] as string[]
+    membersToRemove: [] as string[],
+    jerseyNumbers: {} as Record<string, number | null>
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,16 +78,27 @@ export default function EditTeamPage() {
 
   useEffect(() => {
     if (selectedTeam) {
+      // Create jersey numbers map from members
+      const jerseyNumbers: Record<string, number | null> = {};
+      if (selectedTeam.members) {
+        selectedTeam.members.forEach(member => {
+          jerseyNumbers[member.userId] = member.jerseyNumber;
+        });
+      }
+
       setFormData({
-        name: selectedTeam.name,
+        name: selectedTeam.name || '',
         description: selectedTeam.description || '',
-        sport: selectedTeam.sport,
+        sport: selectedTeam.sport || '',
         minPlayers: selectedTeam.minPlayers || 0,
         maxPlayers: selectedTeam.maxPlayers || 0,
         logo: selectedTeam.logo || '',
         level: selectedTeam.level || '',
+        socialLinks: selectedTeam.socialLinks,
+        rosterRequirements: selectedTeam.rosterRequirements,
         achievements: selectedTeam.achievements ? JSON.stringify(selectedTeam.achievements) : '',
-        membersToRemove: []
+        membersToRemove: [],
+        jerseyNumbers
       });
     }
   }, [selectedTeam]);
@@ -112,6 +126,19 @@ export default function EditTeamPage() {
     }));
   };
 
+  const handleJerseyNumberChange = (userId: string, value: string) => {
+    const numValue = value === '' ? null : parseInt(value);
+    const jerseyNumber = isNaN(numValue as number) ? null : numValue;
+    
+    setFormData(prev => ({
+      ...prev,
+      jerseyNumbers: {
+        ...prev.jerseyNumbers,
+        [userId]: jerseyNumber
+      }
+    }));
+  };
+
   const handleRemoveMember = (userId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -120,23 +147,30 @@ export default function EditTeamPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    if (!teamId) {
-        toast.error('Invalid team ID - please return to the team page and try again');
-
-      }
-    console.log('Current teamId:', teamId);
     e.preventDefault();
+    
+    if (!teamId) {
+      toast.error('Invalid team ID - please return to the team page and try again');
+      return;
+    }
+    
     setIsSubmitting(true);
-    console.log('Current teamId:', teamId);
     
     try {
+      // Prepare jersey number updates for members
+      const memberUpdates = Object.entries(formData.jerseyNumbers).map(([userId, jerseyNumber]) => ({
+        userId,
+        jerseyNumber
+      }));
+      
       await dispatch(updateTeam({
-        teamId: teamId ?? '',
+        teamId: teamId,
         teamData: {
           ...formData,
           achievements: formData.achievements ? JSON.parse(formData.achievements) : null,
           minPlayers: formData.minPlayers || null,
-          maxPlayers: formData.maxPlayers || null
+          maxPlayers: formData.maxPlayers || null,
+          memberUpdates // Pass member updates to the API
         }
       })).unwrap();
       
@@ -300,6 +334,58 @@ export default function EditTeamPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="socialLinks">Social Links (JSON)</Label>
+                  <Textarea
+                    id="socialLinks"
+                    name="socialLinks"
+                    value={formData.socialLinks ? JSON.stringify(formData.socialLinks) : ''}
+                    onChange={(e) => {
+                      try {
+                        const value = e.target.value ? JSON.parse(e.target.value) : null;
+                        setFormData(prev => ({
+                          ...prev,
+                          socialLinks: value
+                        }));
+                      } catch {
+                        // Keep the raw text if it's not valid JSON
+                        setFormData(prev => ({
+                          ...prev,
+                          socialLinks: e.target.value === '' ? null : prev.socialLinks
+                        }));
+                      }
+                    }}
+                    rows={2}
+                    placeholder='{"twitter": "https://twitter.com/team", "instagram": "https://instagram.com/team"}'
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rosterRequirements">Roster Requirements (JSON)</Label>
+                  <Textarea
+                    id="rosterRequirements"
+                    name="rosterRequirements"
+                    value={formData.rosterRequirements ? JSON.stringify(formData.rosterRequirements) : ''}
+                    onChange={(e) => {
+                      try {
+                        const value = e.target.value ? JSON.parse(e.target.value) : null;
+                        setFormData(prev => ({
+                          ...prev,
+                          rosterRequirements: value
+                        }));
+                      } catch {
+                        // Keep the raw text if it's not valid JSON
+                        setFormData(prev => ({
+                          ...prev,
+                          rosterRequirements: e.target.value === '' ? null : prev.rosterRequirements
+                        }));
+                      }
+                    }}
+                    rows={2}
+                    placeholder='{"positions": ["goalkeeper", "defender", "midfielder", "striker"]}'
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="achievements">Achievements (JSON)</Label>
                   <Textarea
                     id="achievements"
@@ -307,7 +393,7 @@ export default function EditTeamPage() {
                     value={formData.achievements}
                     onChange={handleChange}
                     rows={3}
-                    placeholder='{"year": "2023", "title": "Championship Winner"}'
+                    placeholder='[{"year": "2023", "title": "Championship Winner"}]'
                   />
                 </div>
               </CardContent>
@@ -378,19 +464,34 @@ export default function EditTeamPage() {
                                   Captain
                                 </Badge>
                               )}
+                              {member.position && (
+                                <Badge variant="outline">
+                                  {member.position}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
-                        {!member.isCaptain && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveMember(member.userId)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="w-16"
+                            placeholder="#"
+                            type="number"
+                            min="0"
+                            value={formData.jerseyNumbers[member.userId] || ''}
+                            onChange={(e) => handleJerseyNumberChange(member.userId, e.target.value)}
+                          />
+                          {!member.isCaptain && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveMember(member.userId)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -420,6 +521,10 @@ export default function EditTeamPage() {
                   <span className="font-medium">{selectedTeam.matchHistory?.losses || 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Draws</span>
+                  <span className="font-medium">{selectedTeam.matchHistory?.draws || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Trophies</span>
                   <span className="font-medium flex items-center gap-1">
                     <Trophy className="h-4 w-4 text-yellow-500" />
@@ -434,6 +539,10 @@ export default function EditTeamPage() {
                     </span>
                   </div>
                 )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Rating</span>
+                  <span className="font-medium">{selectedTeam.rating}</span>
+                </div>
               </CardContent>
             </Card>
 

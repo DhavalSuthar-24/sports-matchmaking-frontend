@@ -22,7 +22,7 @@ import TeamDetails from "./pages/team/TeamDetails";
 // Match Pages
 import Matches from "./pages/match/Matches";
 import CreateMatch from "./pages/match/CreateMatch";
-import MatchDetails from "./pages/match/MatchDetails";
+import MatchDetails from "./pages/match/matchDetails";
 
 // Tournament Pages
 import Tournaments from "./pages/tournament/Tournaments";
@@ -64,6 +64,8 @@ import GameDetailsPage from "./pages/game/game-details";
 import CreateGamePage from "./pages/game/create-game";
 import EditGamePage from "./pages/game/edit-game";
 import ChallengeDetail from "./pages/challenge/challengeDetails";
+import Prac from "./pages/practice/Prac";
+import ScoreCard from "./pages/scorecard/ScoreCard";
 
 function App() {
   return (
@@ -74,6 +76,7 @@ function App() {
         <Headers />
         <Routes>
           {/* Public Routes */}
+          <Route path="/prac" element={<Prac />} />
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -103,7 +106,8 @@ function App() {
             {/* Match Routes */}
             <Route path="/matches" element={<Matches />} />
             <Route path="/matches/create" element={<CreateMatch />} />
-            <Route path="/matches/:id" element={<MatchDetails />} />
+            <Route path="/matches/:matchId/scorecard" element={<ScoreCard />} />
+            <Route path="/matches/:matchId" element={<MatchDetails />} />
 
             {/* Tournament Routes */}
             <Route path="/tournaments" element={<Tournaments />} />

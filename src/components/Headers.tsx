@@ -55,7 +55,7 @@ export const Header: React.FC = () => {
     { icon: <Users size={18} />, label: 'Teams', path: '/teams' },
     { icon: <Trophy size={18} />, label: 'Tournaments', path: '/tournaments' },
     { icon: <Shield size={18} />, label: 'Challenges', path: '/challenges' },
-    { icon: <Target size={18} />, label: 'Sports', path: '/sports' },
+    { icon: <Target size={18} />, label: 'Sports', path: '/games' },
     { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/dashboard' }
   ];
 

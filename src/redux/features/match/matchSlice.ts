@@ -1,221 +1,262 @@
-import { createSlice } from "@reduxjs/toolkit"
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { GetMatchStatsResponse, Match, SubmitLineupsResponse } from './matchTypes';
+import { Media } from '../venue/venueTypes';
 import {
-  fetchMatches,
-  fetchMatchById,
   createMatch,
+  getAllMatches,
+  getMatch,
   updateMatch,
   deleteMatch,
-  updateMatchStatus,
-  updateMatchScore,
-  updateMatchScoreboard,
-  fetchMatchesByTeam,
-  fetchMatchesByVenue,
-  fetchMatchesByGame,
-  createMatchFromChallenge
-} from "./matchThunks"
-import type { Match } from "./matchTypes"
+
+  finalizeMatch,
+  recordMatchToss,
+
+  createMatchFromChallenge,
+  getMatchStats,
+  submitLineups,
+ 
+} from './matchThunks';
 
 interface MatchState {
-  matches: Match[]
-  selectedMatch: Match | null
-  status: "idle" | "loading" | "succeeded" | "failed"
-  error: string | null
+  matches: Match[];
+  currentMatch: Match | null;
+  teamMatches: Match[];
+  venueMatches: Match[];
+  gameMatches: Match[];
+  matchMedia: Media[];
+  loading: boolean;
+  matchStats: unknown,
+  error: string | null;
 }
 
 const initialState: MatchState = {
   matches: [],
-  selectedMatch: null,
-  status: "idle",
-  error: null,
-}
+  currentMatch: null,
+  teamMatches: [],
+  venueMatches: [],
+  gameMatches: [],
+  matchMedia: [],
+  matchStats: null,
+  loading: false,
+  error: null
+};
 
 const matchSlice = createSlice({
-  name: "matches",
+  name: 'match',
   initialState,
-  reducers: {},
+  reducers: {
+    clearMatchError: (state) => {
+      state.error = null;
+    },
+    clearCurrentMatch: (state) => {
+      state.currentMatch = null;
+    },
+    resetMatchState: () => initialState
+  },
   extraReducers: (builder) => {
-    // Fetch Matches
     builder
-      .addCase(fetchMatches.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(fetchMatches.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches = action.payload
-      })
-      .addCase(fetchMatches.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
-
-    // Fetch Match By Id
-    builder
-      .addCase(fetchMatchById.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(fetchMatchById.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.selectedMatch = action.payload
-      })
-      .addCase(fetchMatchById.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
-
-    // Create Match
-    builder
+      // Create Match
       .addCase(createMatch.pending, (state) => {
-        state.status = "loading"
+        state.loading = true;
+        state.error = null;
       })
       .addCase(createMatch.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches.push(action.payload)
-        state.selectedMatch = action.payload
+        state.loading = false;
+        state.matches = [...state.matches, action.payload.data.match];
+        state.currentMatch = action.payload.data.match;
       })
       .addCase(createMatch.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to create match';
       })
 
-    // Create Match from Challenge
-    builder
-      .addCase(createMatchFromChallenge.pending, (state) => {
-        state.status = "loading"
+      // Get All Matches
+      .addCase(getAllMatches.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(createMatchFromChallenge.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches.push(action.payload)
-        state.selectedMatch = action.payload
+      .addCase(getAllMatches.fulfilled, (state, action) => {
+        state.loading = false;
+        state.matches = action.payload.data.matches;
       })
-      .addCase(createMatchFromChallenge.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
+      .addCase(getAllMatches.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to fetch matches';
       })
 
-    // Update Match
-    builder
+      // Get Specific Match
+      .addCase(getMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentMatch = action.payload;
+      })
+      .addCase(getMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to fetch match';
+      })
+
+      // Update Match
       .addCase(updateMatch.pending, (state) => {
-        state.status = "loading"
+        state.loading = true;
+        state.error = null;
       })
       .addCase(updateMatch.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        const index = state.matches.findIndex((match) => match.id === action.payload.id)
-        if (index !== -1) {
-          state.matches[index] = action.payload
+        state.loading = false;
+        const updatedMatch = action.payload.data.match;
+        
+        state.matches = state.matches.map(match => 
+          match.id === updatedMatch.id ? updatedMatch : match
+        );
+        
+        if (state.currentMatch?.id === updatedMatch.id) {
+          state.currentMatch = updatedMatch;
         }
-        state.selectedMatch = action.payload
       })
       .addCase(updateMatch.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to update match';
       })
 
-    // Delete Match
-    builder
+      // Delete Match
       .addCase(deleteMatch.pending, (state) => {
-        state.status = "loading"
+        state.loading = true;
+        state.error = null;
       })
       .addCase(deleteMatch.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches = state.matches.filter((match) => match.id !== action.payload)
-        state.selectedMatch = null
+        state.loading = false;
+        const matchId = action.meta.arg;
+        
+        state.matches = state.matches.filter(match => match.id !== matchId);
+        
+        if (state.currentMatch?.id === matchId) {
+          state.currentMatch = null;
+        }
       })
       .addCase(deleteMatch.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to delete match';
       })
 
-    // Update Match Status
-    builder
-      .addCase(updateMatchStatus.pending, (state) => {
-        state.status = "loading"
+    
+
+      // Finalize Match
+      .addCase(finalizeMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(updateMatchStatus.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        const index = state.matches.findIndex((match) => match.id === action.payload.id)
-        if (index !== -1) {
-          state.matches[index] = action.payload
+      .addCase(finalizeMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        const finalizedMatch = action.payload.data.match;
+        
+        state.matches = state.matches.map(match => 
+          match.id === finalizedMatch.id ? finalizedMatch : match
+        );
+        
+        if (state.currentMatch?.id === finalizedMatch.id) {
+          state.currentMatch = finalizedMatch;
         }
-        state.selectedMatch = action.payload
       })
-      .addCase(updateMatchStatus.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
+      .addCase(finalizeMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to finalize match';
       })
 
-    // Update Match Score
-    builder
-      .addCase(updateMatchScore.pending, (state) => {
-        state.status = "loading"
+
+      .addCase(recordMatchToss.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(updateMatchScore.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        const index = state.matches.findIndex((match) => match.id === action.payload.matchId)
-        if (index !== -1 && state.matches[index].teams) {
-          const teamIndex = state.matches[index].teams.findIndex(
-            (mt) => mt.team.id === action.payload.teamId
-          )
-          if (teamIndex !== -1) {
-            // Note: You might need to adjust this based on your exact team structure
-            // state.matches[index].teams[teamIndex].score = action.payload.score
+      .addCase(recordMatchToss.fulfilled, (state, action) => {
+        state.loading = false;
+        const matchId = action.meta.arg.id;
+        const toss = action.payload.data.toss;
+        
+        state.matches = state.matches.map(match => {
+          if (match.id === matchId) {
+            return { ...match, toss };
+          }
+          return match;
+        });
+        
+        if (state.currentMatch?.id === matchId) {
+          state.currentMatch = { ...state.currentMatch, toss };
+        }
+      })
+      .addCase(recordMatchToss.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to record toss';
+      })
+
+   
+   
+
+      .addCase(createMatchFromChallenge.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createMatchFromChallenge.fulfilled, (state, action) => {
+        state.loading = false;
+        state.matches = [...state.matches, action.payload.data.match];
+        state.currentMatch = action.payload.data.match;
+      })
+      .addCase(createMatchFromChallenge.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to create match from challenge';
+      })
+      builder.addCase(submitLineups.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      });
+      builder.addCase(
+        submitLineups.fulfilled,
+        (state, action: PayloadAction<SubmitLineupsResponse>) => {
+          state.loading = false;
+          if (state.currentMatch) {
+            // Update the lineup in the current match state
+            const updatedTeams = state.currentMatch.teams.map((team) => {
+              if (team.teamId === action.payload.matchTeam.teamId) {
+                return {
+                  ...team,
+                  lineup: action.payload.matchTeam.lineup,
+                  lineupSubmitted: action.payload.matchTeam.lineupSubmitted,
+                };
+              }
+              return team;
+            });
+            state.currentMatch = {
+              ...state.currentMatch,
+              teams: updatedTeams,
+            };
           }
         }
-        // If you have a selected match, update its score similarly
-        if (state.selectedMatch?.id === action.payload.matchId) {
-          // Update selected match score
+      );
+      builder.addCase(submitLineups.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  
+      // Get Match Stats
+      builder.addCase(getMatchStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      });
+      builder.addCase(
+        getMatchStats.fulfilled,
+        (state, action: PayloadAction<GetMatchStatsResponse>) => {
+          state.loading = false;
+          state.matchStats = action.payload;
         }
-      })
-      .addCase(updateMatchScore.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
+      );
+      builder.addCase(getMatchStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    },
+  });
 
-    // Fetch Matches by Team
-    builder
-      .addCase(fetchMatchesByTeam.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(fetchMatchesByTeam.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches = action.payload
-      })
-      .addCase(fetchMatchesByTeam.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
+export const { clearMatchError, clearCurrentMatch, resetMatchState } = matchSlice.actions;
 
-    // Fetch Matches by Venue
-    builder
-      .addCase(fetchMatchesByVenue.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(fetchMatchesByVenue.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches = action.payload
-      })
-      .addCase(fetchMatchesByVenue.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
-
-    // Fetch Matches by Game
-    builder
-      .addCase(fetchMatchesByGame.pending, (state) => {
-        state.status = "loading"
-      })
-      .addCase(fetchMatchesByGame.fulfilled, (state, action) => {
-        state.status = "succeeded"
-        state.matches = action.payload
-      })
-      .addCase(fetchMatchesByGame.rejected, (state, action) => {
-        state.status = "failed"
-        state.error = action.payload as string
-      })
-  },
-})
-
-export default matchSlice.reducer
-export const selectMatches = (state: { matches: MatchState }) => state.matches.matches
-export const selectSelectedMatch = (state: { matches: MatchState }) => state.matches.selectedMatch
-export const selectMatchStatus = (state: { matches: MatchState }) => state.matches.status
-export const selectMatchError = (state: { matches: MatchState }) => state.matches.error
+export default matchSlice.reducer;

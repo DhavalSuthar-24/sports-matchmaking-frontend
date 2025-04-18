@@ -1,254 +1,235 @@
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import api from "@/redux/api";
+import { RootState } from "@/redux/store";
+import {
+  CreateMatchResponse,
+  GetMatchesResponse,
+  GetMatchResponse,
+  UpdateMatchPayload,
+  CreateMatchFromChallengePayload,
+  MatchTossPayload,
+  MatchTossResponse,
+  FinalizeMatchPayload,
+  GetMatchStatsResponse,
+  SubmitLineupsPayload,
+  SubmitLineupsResponse,
+} from "./matchTypes";
 
-import { createAsyncThunk } from "@reduxjs/toolkit"
-import type { RootState } from "@/redux/store"
-import api from "@/redux/api"
-import type { 
-  CreateMatchPayload, 
-  UpdateMatchPayload, 
-  UpdateMatchStatusPayload,
-  UpdateMatchScorePayload
-} from "./matchTypes"
-
-// Base URL for API calls
-const BASE_URL = "http://localhost:3000/api/matches"
-
-// Fetch Matches
-export const fetchMatches = createAsyncThunk(
-  "matches/fetchMatches",
-  async (params: { 
-    status?: string; 
-    gameId?: string; 
-    matchType?: string 
-  } = {}, { rejectWithValue }) => {
-    try {
-      const response = await api.get("/matches", { params })
-      return response.data.data.matches
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to fetch matches")
-    }
+const getAuthConfig = (getState: () => unknown) => {
+  const state = getState() as RootState;
+  const token = state.auth.token;
+  if (!token) {
+    console.warn("No auth token found for API request");
   }
-)
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
 
-// Fetch Single Match
-export const fetchMatchById = createAsyncThunk(
-  "matches/fetchMatchById",
-  async (matchId: string, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/matches/${matchId}`)
-      return response.data.data.match
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to fetch match details")
-    }
-  }
-)
-
-// Create Match
-export const createMatch = createAsyncThunk(
+// Create a new match
+export const createMatch = createAsyncThunk<CreateMatchResponse, any>(
   "matches/createMatch",
-  async (matchData: CreateMatchPayload, { rejectWithValue, getState }) => {
+  async (matchData, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      const response = await api.post("/matches", matchData, config)
-      return response.data.data.match
+      const response = await api.post(
+        "/matches",
+        matchData,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to create match")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to create match" }
+      );
     }
   }
-)
+);
 
-// Create Match from Challenge
-export const createMatchFromChallenge = createAsyncThunk(
-  "matches/createMatchFromChallenge",
-  async (
-    { challengeId, matchData }: { 
-      challengeId: string, 
-      matchData: CreateMatchPayload 
-    }, 
-    { rejectWithValue, getState }
-  ) => {
+// Get all matches with optional filters
+interface FetchMatchesParams {
+  status?: string;
+  gameId?: string;
+  matchType?: string;
+  skillLevel?: string;
+  scheduledAfter?: string;
+  scheduledBefore?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const getAllMatches = createAsyncThunk<
+  GetMatchesResponse,
+  FetchMatchesParams | undefined
+>("matches/getAllMatches", async (params, { rejectWithValue, getState }) => {
+  try {
+    const response = await api.get("/matches", {
+      params,
+      ...getAuthConfig(getState),
+    });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data || { message: "Failed to fetch matches" }
+    );
+  }
+});
+
+export const getMatch = createAsyncThunk<GetMatchResponse, string>(
+  "matches/getMatch",
+  async (matchId, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      const response = await api.post(`/matches/from-challenge/${challengeId}`, matchData, config)
-      return response.data.data.match
+      const response = await api.get(
+        `/matches/${matchId}`,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to create match from challenge")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to fetch match" }
+      );
     }
   }
-)
+);
 
-// Update Match
-export const updateMatch = createAsyncThunk(
+// Update a match
+export const updateMatch = createAsyncThunk<
+  GetMatchResponse,
+  { id: string; data: UpdateMatchPayload }
+>(
   "matches/updateMatch",
-  async (
-    { matchId, matchData }: { matchId: string; matchData: UpdateMatchPayload },
-    { rejectWithValue, getState }
-  ) => {
+  async ({ id, data }, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      const response = await api.patch(`/matches/${matchId}`, matchData, config)
-      return response.data.data.match
+      const response = await api.patch(
+        `/matches/${id}`,
+        data,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update match")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to update match" }
+      );
     }
   }
-)
+);
 
-// Delete Match
-export const deleteMatch = createAsyncThunk(
+// Delete a match
+export const deleteMatch = createAsyncThunk<void, string>(
   "matches/deleteMatch",
-  async (matchId: string, { rejectWithValue, getState }) => {
+  async (matchId, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      await api.delete(`/matches/${matchId}`, config)
-      return matchId
+      await api.delete(`/matches/${matchId}`, getAuthConfig(getState));
+      return;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to delete match")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to delete match" }
+      );
     }
   }
-)
+);
 
-// Update Match Status
-export const updateMatchStatus = createAsyncThunk(
-  "matches/updateMatchStatus",
-  async (
-    { matchId, status }: UpdateMatchStatusPayload, 
-    { rejectWithValue, getState }
-  ) => {
+// Finalize match
+export const finalizeMatch = createAsyncThunk<
+  GetMatchResponse,
+  { id: string; data: FinalizeMatchPayload }
+>(
+  "matches/finalizeMatch",
+  async ({ id, data }, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      const response = await api.patch(`/matches/${matchId}/status`, { status }, config)
-      return response.data.data.match
+      const response = await api.post(
+        `/matches/${id}/finalize`,
+        data,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update match status")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to finalize match" }
+      );
     }
   }
-)
+);
 
-// Update Match Score
-export const updateMatchScore = createAsyncThunk(
-  "matches/updateMatchScore",
-  async (
-    { matchId, teamId, score }: UpdateMatchScorePayload, 
-    { rejectWithValue, getState }
-  ) => {
+// Record match toss
+export const recordMatchToss = createAsyncThunk<
+  MatchTossResponse,
+  { id: string; data: MatchTossPayload }
+>("matches/recordToss", async ({ id, data }, { rejectWithValue, getState }) => {
+  try {
+    const response = await api.post(
+      `/matches/${id}/toss`,
+      data,
+      getAuthConfig(getState)
+    );
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data || { message: "Failed to record toss" }
+    );
+  }
+});
+
+// Create match from challenge
+export const createMatchFromChallenge = createAsyncThunk<
+  CreateMatchResponse,
+  { challengeId: string; data: CreateMatchFromChallengePayload }
+>(
+  "matches/createMatchFromChallenge",
+  async ({ challengeId, data }, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      await api.patch(`/matches/${matchId}/score`, { teamId, score }, config)
-      return { matchId, teamId, score }
+      const response = await api.post(
+        `/matches/from-challenge/${challengeId}`,
+        data,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update match score")
+      return rejectWithValue(
+        error.response?.data || {
+          message: "Failed to create match from challenge",
+        }
+      );
     }
   }
-)
+);
 
-// Update Match Scoreboard
-export const updateMatchScoreboard = createAsyncThunk(
-  "matches/updateMatchScoreboard",
-  async (
-    { matchId, scoreboard }: { matchId: string; scoreboard: any }, 
-    { rejectWithValue, getState }
-  ) => {
+export const submitLineups = createAsyncThunk<
+  SubmitLineupsResponse,
+  { matchId: string; data: SubmitLineupsPayload }
+>(
+  "matches/submitLineups",
+  async ({ matchId, data }, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as RootState
-      const token = state.auth.token
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-
-      const response = await api.post(`/matches/${matchId}/scoreboard`, { scoreboard }, config)
-      return response.data.data.match
+      const response = await api.post(
+        `/matches/${matchId}/lineups`,
+        data,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update match scoreboard")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to submit lineups" }
+      );
     }
   }
-)
+);
 
-// Fetch Matches by Team
-export const fetchMatchesByTeam = createAsyncThunk(
-  "matches/fetchMatchesByTeam",
-  async (teamId: string, { rejectWithValue }) => {
+// Get match stats
+export const getMatchStats = createAsyncThunk<GetMatchStatsResponse, string>(
+  "matches/getMatchStats",
+  async (matchId, { rejectWithValue, getState }) => {
     try {
-      const response = await api.get(`/matches/by-team/${teamId}`)
-      return response.data.data.matches
+      const response = await api.get(
+        `/matches/${matchId}/stats`,
+        getAuthConfig(getState)
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to fetch matches by team")
+      return rejectWithValue(
+        error.response?.data || { message: "Failed to fetch match stats" }
+      );
     }
   }
-)
-
-// Fetch Matches by Venue
-export const fetchMatchesByVenue = createAsyncThunk(
-  "matches/fetchMatchesByVenue",
-  async (venueId: string, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/matches/by-venue/${venueId}`)
-      return response.data.data.matches
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to fetch matches by venue")
-    }
-  }
-)
-
-// Fetch Matches by Game
-export const fetchMatchesByGame = createAsyncThunk(
-  "matches/fetchMatchesByGame",
-  async (gameId: string, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/matches/by-game/${gameId}`)
-      return response.data.matches
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to fetch matches by game")
-    }
-  }
-)
+);
